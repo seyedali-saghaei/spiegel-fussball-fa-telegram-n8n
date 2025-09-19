@@ -1,0 +1,19 @@
+# secrets
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# node
+node_modules/
+
+# python
+__pycache__/
+
+# editor
+.idea/
+.vscode/
+
+# n8n
+*.backup
