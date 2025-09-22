@@ -1,0 +1,31 @@
+{
+  "name": "SPIEGEL Football Base",
+  "nodes": [
+    {
+      "id": "Cron",
+      "name": "Cron (every 15 min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        200
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 15
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "timezone": "Europe/Berlin"
+  },
+  "active": false
+}
