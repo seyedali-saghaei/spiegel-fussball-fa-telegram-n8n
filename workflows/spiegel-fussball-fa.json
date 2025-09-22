@@ -1,42 +1,143 @@
 {
-  "name": "SPIEGEL Football Base",
+  "name": "FootballSpiegel",
   "nodes": [
     {
-      "id": "Cron",
-      "name": "Cron (every 15 min)",
-      "type": "n8n-nodes-base.cron",
-      "typeVersion": 1,
-      "position": [
-        240,
-        200
-      ],
       "parameters": {
         "triggerTimes": {
           "item": [
             {
               "mode": "everyX",
-              "unit": "minutes",
-              "value": 15
+              "value": 15,
+              "unit": "minutes"
             }
           ]
         }
-      }
+      },
+      "id": "ed85de68-c65b-42e1-9678-cb9a8665a844",
+      "name": "Cron (every 15 min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -320
+      ]
     },
     {
-      "id": "RSS",
+      "parameters": {
+        "url": "https://www.spiegel.de/sport/fussball/index.rss",
+        "options": {}
+      },
+      "id": "287f7708-0d85-460e-bdb8-5d39e910cb9f",
       "name": "RSS Read (SPIEGEL Fußball)",
       "type": "n8n-nodes-base.rssFeedRead",
       "typeVersion": 1,
       "position": [
-        520,
-        200
-      ],
+        -544,
+        -320
+      ]
+    },
+    {
       "parameters": {
-        "url": "https://www.spiegel.de/sport/fussball/index.rss",
-        "options": {
-          "splitLines": false
-        }
-      }
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1-title-not-frauen",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "frauen",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c2-title-not-women",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "women",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c3-title-not-frauen-buli",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "frauen-bundesliga",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c4-title-not-frauenwm",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "frauenwm",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c5-sum-not-frauen",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "frauen",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c6-sum-not-women",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "women",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c7-sum-not-frauen-buli",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "frauen-bundesliga",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c8-sum-not-frauenwm",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "frauenwm",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -304,
+        -320
+      ],
+      "id": "cded9c96-221d-4128-a888-19d09725fe5e",
+      "name": "Filter (men-only)"
     }
   ],
   "connections": {
@@ -50,10 +151,22 @@
           }
         ]
       ]
+    },
+    "RSS Read (SPIEGEL Fußball)": {
+      "main": [
+        [
+          {
+            "node": "Filter (men-only)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
+  "active": false,
   "settings": {
-    "timezone": "Europe/Berlin"
+    "executionOrder": "v1"
   },
-  "active": false
+  "tags": []
 }
