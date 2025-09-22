@@ -1,0 +1,220 @@
+{
+  "name": "FootballSpiegel",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 15,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "56d663a0-4401-49cd-a6f8-af639b5d5ac9",
+      "name": "Cron (every 15 min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        704,
+        -336
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.spiegel.de/sport/fussball/index.rss",
+        "options": {}
+      },
+      "id": "a9d39561-a8ea-437b-8d12-70673852852c",
+      "name": "RSS Read (SPIEGEL Fußball)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        992,
+        -336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1-title-not-frauen",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "frauen",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c2-title-not-women",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "women",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c3-title-not-frauen-buli",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "frauen-bundesliga",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c4-title-not-frauenwm",
+              "leftValue": "={{ $json.title || '' }}",
+              "rightValue": "frauenwm",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c5-sum-not-frauen",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "frauen",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c6-sum-not-women",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "women",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c7-sum-not-frauen-buli",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "frauen-bundesliga",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "c8-sum-not-frauenwm",
+              "leftValue": "={{ $json.summary || $json.description || '' }}",
+              "rightValue": "frauenwm",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1232,
+        -336
+      ],
+      "id": "62eda0b0-d9d9-4ac9-8b62-233e6807762e",
+      "name": "Filter (men-only)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image & teaser\nreturn items.map(item => {\n  const j = item.json;\n  let image = null;\n  if (j.enclosure && j.enclosure.url) image = j.enclosure.url;\n  if (!image && j[\"media:content\"] && j[\"media:content\"].url) image = j[\"media:content\"].url;\n  if (!image && typeof j.content === 'string') {\n    const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m) image = m[1];\n  }\n  const rawTeaser = (j.summary || j.description || '');\n  const teaser = typeof rawTeaser === 'string' ? rawTeaser.replace(/<[^>]*>/g, '').trim() : '';\n  item.json.imageUrl = image || null;\n  item.json.teaser = teaser;\n  return item;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        -336
+      ],
+      "id": "5ffee35f-f226-4455-bff8-dafc61065aca",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Time window: last 20 minutes (stateless)\nconst cutoff = new Date(Date.now() - 20 * 60 * 1000);\nreturn items.filter(item => {\n  const j = item.json;\n  const d = new Date(j.isoDate || j.pubDate || j.date || j.pubdate || 0);\n  return d > cutoff;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        -336
+      ],
+      "id": "2fc7d14d-7a3b-46e5-a9bd-2c3bf8e2a7fb",
+      "name": "Time window (last 20 min)"
+    }
+  ],
+  "connections": {
+    "Cron (every 15 min)": {
+      "main": [
+        [
+          {
+            "node": "RSS Read (SPIEGEL Fußball)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (SPIEGEL Fußball)": {
+      "main": [
+        [
+          {
+            "node": "Filter (men-only)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter (men-only)": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Time window (last 20 min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
