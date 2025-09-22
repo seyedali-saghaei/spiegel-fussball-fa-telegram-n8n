@@ -13,13 +13,13 @@
           ]
         }
       },
-      "id": "ed85de68-c65b-42e1-9678-cb9a8665a844",
+      "id": "56d663a0-4401-49cd-a6f8-af639b5d5ac9",
       "name": "Cron (every 15 min)",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        -832,
-        -320
+        704,
+        -336
       ]
     },
     {
@@ -27,13 +27,13 @@
         "url": "https://www.spiegel.de/sport/fussball/index.rss",
         "options": {}
       },
-      "id": "287f7708-0d85-460e-bdb8-5d39e910cb9f",
+      "id": "a9d39561-a8ea-437b-8d12-70673852852c",
       "name": "RSS Read (SPIEGEL Fußball)",
       "type": "n8n-nodes-base.rssFeedRead",
       "typeVersion": 1,
       "position": [
-        -544,
-        -320
+        992,
+        -336
       ]
     },
     {
@@ -133,24 +133,37 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
-        -304,
-        -320
+        1232,
+        -336
       ],
-      "id": "cded9c96-221d-4128-a888-19d09725fe5e",
+      "id": "62eda0b0-d9d9-4ac9-8b62-233e6807762e",
       "name": "Filter (men-only)"
     },
     {
       "parameters": {
-        "functionCode": "return items.map(i => {\n  const j = i.json;\n  let image = null;\n  // RSS variants\n  if (j.enclosure && j.enclosure.url) image = j.enclosure.url;\n  if (!image && j[\"media:content\"] && j[\"media:content\"].url) image = j[\"media:content\"].url;\n  if (!image && typeof j.content === 'string') {\n    const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m) image = m[1];\n  }\n  // Normalize teaser (strip HTML)\n  const rawTeaser = (j.summary || j.description || '');\n  const teaser = typeof rawTeaser === 'string' ? rawTeaser.replace(/<[^>]*>/g,'').trim() : '';\n  i.json.imageUrl = image || null;\n  i.json.teaser = teaser;\n  return i;\n});"
+        "jsCode": "// Extract image & teaser\nreturn items.map(item => {\n  const j = item.json;\n  let image = null;\n  if (j.enclosure && j.enclosure.url) image = j.enclosure.url;\n  if (!image && j[\"media:content\"] && j[\"media:content\"].url) image = j[\"media:content\"].url;\n  if (!image && typeof j.content === 'string') {\n    const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m) image = m[1];\n  }\n  const rawTeaser = (j.summary || j.description || '');\n  const teaser = typeof rawTeaser === 'string' ? rawTeaser.replace(/<[^>]*>/g, '').trim() : '';\n  item.json.imageUrl = image || null;\n  item.json.teaser = teaser;\n  return item;\n});"
       },
-      "id": "f7a22f4d-6c3f-4b6a-9d46-3d2f5c7e8c11",
-      "name": "Extract image & teaser",
-      "type": "n8n-nodes-base.function",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -64,
-        -320
-      ]
+        1456,
+        -336
+      ],
+      "id": "5ffee35f-f226-4455-bff8-dafc61065aca",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Time window: last 20 minutes (stateless)\nconst cutoff = new Date(Date.now() - 20 * 60 * 1000);\nreturn items.filter(item => {\n  const j = item.json;\n  const d = new Date(j.isoDate || j.pubDate || j.date || j.pubdate || 0);\n  return d > cutoff;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        -336
+      ],
+      "id": "2fc7d14d-7a3b-46e5-a9bd-2c3bf8e2a7fb",
+      "name": "Time window (last 20 min)"
     }
   ],
   "connections": {
@@ -180,7 +193,18 @@
       "main": [
         [
           {
-            "node": "Extract image & teaser",
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Time window (last 20 min)",
             "type": "main",
             "index": 0
           }
