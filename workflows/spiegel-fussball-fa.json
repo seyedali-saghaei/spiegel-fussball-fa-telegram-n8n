@@ -21,9 +21,37 @@
           ]
         }
       }
+    },
+    {
+      "id": "RSS",
+      "name": "RSS Read (SPIEGEL Fußball)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        520,
+        200
+      ],
+      "parameters": {
+        "url": "https://www.spiegel.de/sport/fussball/index.rss",
+        "options": {
+          "splitLines": false
+        }
+      }
     }
   ],
-  "connections": {},
+  "connections": {
+    "Cron (every 15 min)": {
+      "main": [
+        [
+          {
+            "node": "RSS Read (SPIEGEL Fußball)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "settings": {
     "timezone": "Europe/Berlin"
   },
