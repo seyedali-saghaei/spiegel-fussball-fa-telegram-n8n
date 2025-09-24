@@ -13,13 +13,13 @@
           ]
         }
       },
-      "id": "56d663a0-4401-49cd-a6f8-af639b5d5ac9",
+      "id": "8595560a-a9e9-4b15-be53-7c856444b207",
       "name": "Cron (every 15 min)",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        704,
-        -336
+        432,
+        -240
       ]
     },
     {
@@ -27,13 +27,13 @@
         "url": "https://www.spiegel.de/sport/fussball/index.rss",
         "options": {}
       },
-      "id": "a9d39561-a8ea-437b-8d12-70673852852c",
+      "id": "ec9297fa-c5ed-47fb-8ac1-0a00787ab0a3",
       "name": "RSS Read (SPIEGEL Fußball)",
       "type": "n8n-nodes-base.rssFeedRead",
       "typeVersion": 1,
       "position": [
-        992,
-        -336
+        656,
+        -240
       ]
     },
     {
@@ -133,10 +133,10 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
-        1232,
-        -336
+        880,
+        -240
       ],
-      "id": "62eda0b0-d9d9-4ac9-8b62-233e6807762e",
+      "id": "35407f8c-6022-463d-b0a2-1a1d4d395757",
       "name": "Filter (men-only)"
     },
     {
@@ -146,10 +146,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1456,
-        -336
+        1104,
+        -240
       ],
-      "id": "5ffee35f-f226-4455-bff8-dafc61065aca",
+      "id": "0734a457-9592-47b5-8a8f-87c199860656",
       "name": "Code"
     },
     {
@@ -164,34 +164,47 @@
         },
         "options": {}
       },
-      "id": "0f6d6f37-2c5b-4b96-9b2d-3a9b7a2f1e10",
+      "id": "4b612bd8-1c44-4ab0-9a1a-674ceb95ec34",
       "name": "Set provider (openai|gemini)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
-        1600,
-        -160
+        1328,
+        -240
       ]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
             {
-              "value1": "={{$json.provider}}",
-              "operation": "equal",
-              "value2": "openai"
+              "id": "e18ac0f4-85be-4e6f-a17a-ccbc1efa4403",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
             }
-          ]
-        }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "3b8f5a7e-0a3e-4a1a-a2a0-1f7a9f0b8d2c",
+      "id": "aea5ef82-753f-4968-8d31-822aa8ee5687",
       "name": "IF provider == openai",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1824,
-        -160
+        1552,
+        -240
       ]
     },
     {
@@ -201,41 +214,43 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2048,
-        -256
+        1776,
+        -336
       ],
-      "id": "f4a2bb54-6b8e-4f5f-9b2c-889a2ce6a0a2",
+      "id": "5ae2c560-e13e-4527-9aa4-96f44c64ff11",
       "name": "Build OpenAI body"
     },
     {
       "parameters": {
+        "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
-        "options": {
-          "redirect": {
-            "redirect": "error"
-          }
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
         "sendHeaders": true,
-        "jsonParameters": true,
-        "headerParametersUi": {
-          "parameter": [
+        "headerParameters": {
+          "parameters": [
             {
               "name": "Content-Type",
               "value": "application/json"
             }
           ]
         },
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth",
-        "bodyParametersJson": "={{ $json.openai_body }}"
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}\n",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2272,
-        -256
+        2000,
+        -336
       ],
-      "id": "d0c1d3a0-5d91-4f1d-b2c1-31e7e4f7c0ef",
+      "id": "375ababe-15d7-4d6d-98b4-933cdf726c3e",
       "name": "OpenAI Translate (HTTP)"
     },
     {
@@ -245,10 +260,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2496,
-        -256
+        2224,
+        -336
       ],
-      "id": "b91f8f3a-8e4f-4b30-bcf6-7b8a2c64a2c1",
+      "id": "6aea3ecd-443f-4bc4-9f0e-665ca0508cf5",
       "name": "Pick title_fa (OpenAI)"
     },
     {
@@ -258,49 +273,42 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2048,
-        -64
+        1776,
+        -144
       ],
-      "id": "8f8c9c79-5c4c-4a8f-b3a3-9c1c1c8e9f10",
+      "id": "7343f566-6e97-4c32-b13d-afee6d70e4ac",
       "name": "Build Gemini body"
     },
     {
       "parameters": {
+        "method": "POST",
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-        "options": {
-          "redirect": {
-            "redirect": "error"
-          }
-        },
-        "jsonParameters": true,
+        "authentication": "predefinedCredentialType",
         "sendQuery": true,
-        "queryParametersUi": {
-          "parameter": [
-            {
-              "name": "key",
-              "value": "REPLACE_WITH_YOUR_GEMINI_API_KEY"
-            }
+        "queryParameters": {
+          "parameters": [
+            {}
           ]
         },
         "sendHeaders": true,
-        "headerParametersUi": {
-          "parameter": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+        "headerParameters": {
+          "parameters": [
+            {}
           ]
         },
-        "authentication": "none",
-        "bodyParametersJson": "={{ $json.gemini_body }}"
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2272,
-        -64
+        2000,
+        -144
       ],
-      "id": "e1b7b3d7-3ec5-4a2a-b2f8-0a3d6a0b7c5f",
+      "id": "f7f42b82-d724-4b36-b38b-6202aad561c8",
       "name": "Gemini Translate (HTTP)"
     },
     {
@@ -310,38 +318,37 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2496,
-        -64
+        2224,
+        -144
       ],
-      "id": "6f4c2f7a-6e4d-4c7a-9b50-2d8f8a7c9f21",
+      "id": "8a4b2202-8308-4f01-a3c3-1700489e0b3c",
       "name": "Pick title_fa (Gemini)"
     },
     {
       "parameters": {
-        "mode": "passThrough",
-        "output": "input1"
-      },
-      "id": "0a9f8e74-2d3c-45b0-8d2d-219d1d9e2b3a",
-      "name": "Merge translations",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 2,
-      "position": [
-        2720,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const cutoff = new Date(Date.now() - 20 * 60 * 1000); return items.filter(item => { const j = item.json; const d = new Date(j.isoDate || j.pubDate || j.date || j.pubdate || 0); return d > cutoff; });"
+        "jsCode": "// Filter items: keep only those newer than 20 minutes\nconst cutoff = Date.now() - 20 * 60 * 60 * 1000;\n\n// In Code-Node v2 benutzen wir $input.all() um alle Items zu holen\nconst inputItems = $input.all();\nconst out = [];\n\nfor (const item of inputItems) {\n  const j = item.json;\n\n  // Mögliche Datumsfelder aus dem RSS\n  const candidates = [j.isoDate, j.pubDate, j.date, j.pubdate];\n\n  let pubDate = null;\n  for (const c of candidates) {\n    if (!c) continue;\n    const d = new Date(c);\n    if (!isNaN(d.getTime())) {\n      pubDate = d;\n      break;\n    }\n  }\n\n  // Falls kein Datum gefunden → (für Tests) durchlassen\n  if (!pubDate) {\n    out.push(item);\n    continue;\n  }\n\n  if (pubDate.getTime() > cutoff) {\n    out.push(item); // neu genug → behalten\n  }\n}\n\n// Array von Items zurückgeben\nreturn out;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2944,
-        -160
+        2480,
+        -144
       ],
-      "id": "2fc7d14d-7a3b-46e5-a9bd-2c3bf8e2a7fb",
+      "id": "881a606e-4ea0-4f05-827a-369f6cbdb44b",
       "name": "Time window (last 20 min)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const j = item.json;\n  const titleFa = (j.title_fa || j.title || '').toString().trim();\n  const link = (j.link || j.guid || '').toString().trim();\n\n  // Caption: only headline + source + link\n  let caption = titleFa;\n  if (link) caption += `\\n\\nمنبع: SPIEGEL\\n${link}`;\n\n  // Telegram caption safety (~1024 soft limit)\n  if (caption.length > 1000 && link) {\n    caption = caption.slice(0, 980) + '…\\n' + link;\n  } else if (caption.length > 1000) {\n    caption = caption.slice(0, 1000);\n  }\n\n  j.caption = caption;\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        -240
+      ],
+      "id": "5992093d-5b39-4107-9c92-541e5cb65853",
+      "name": "Build caption"
     }
   ],
   "connections": {
@@ -444,7 +451,7 @@
       "main": [
         [
           {
-            "node": "Merge translations",
+            "node": "Time window (last 20 min)",
             "type": "main",
             "index": 0
           }
@@ -477,18 +484,18 @@
       "main": [
         [
           {
-            "node": "Merge translations",
+            "node": "Time window (last 20 min)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
     },
-    "Merge translations": {
+    "Time window (last 20 min)": {
       "main": [
         [
           {
-            "node": "Time window (last 20 min)",
+            "node": "Build caption",
             "type": "main",
             "index": 0
           }
