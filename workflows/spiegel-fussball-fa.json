@@ -141,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract image & teaser\nreturn items.map(item => {\n  const j = item.json;\n  let image = null;\n  if (j.enclosure && j.enclosure.url) image = j.enclosure.url;\n  if (!image && j[\"media:content\"] && j[\"media:content\"].url) image = j[\"media:content\"].url;\n  if (!image && typeof j.content === 'string') {\n    const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m) image = m[1];\n  }\n  const rawTeaser = (j.summary || j.description || '');\n  const teaser = typeof rawTeaser === 'string' ? rawTeaser.replace(/<[^>]*>/g, '').trim() : '';\n  item.json.imageUrl = image || null;\n  item.json.teaser = teaser;\n  return item;\n});"
+        "jsCode": "return items.map(item => { const j = item.json; let image = null; if (j.enclosure && j.enclosure.url) image = j.enclosure.url; if (!image && j[\"media:content\"] && j[\"media:content\"].url) image = j[\"media:content\"].url; if (!image && typeof j.content === 'string') { const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i); if (m) image = m[1]; } const rawTeaser = (j.summary || j.description || ''); const teaser = typeof rawTeaser === 'string' ? rawTeaser.replace(/<[^>]*>/g, '').trim() : ''; item.json.imageUrl = image || null; item.json.teaser = teaser; return item; });"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -154,13 +154,191 @@
     },
     {
       "parameters": {
-        "jsCode": "// Time window: last 20 minutes (stateless)\nconst cutoff = new Date(Date.now() - 20 * 60 * 1000);\nreturn items.filter(item => {\n  const j = item.json;\n  const d = new Date(j.isoDate || j.pubDate || j.date || j.pubdate || 0);\n  return d > cutoff;\n});"
+        "values": {
+          "string": [
+            {
+              "name": "provider",
+              "value": "openai"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0f6d6f37-2c5b-4b96-9b2d-3a9b7a2f1e10",
+      "name": "Set provider (openai|gemini)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.provider}}",
+              "operation": "equal",
+              "value2": "openai"
+            }
+          ]
+        }
+      },
+      "id": "3b8f5a7e-0a3e-4a1a-a2a0-1f7a9f0b8d2c",
+      "name": "IF provider == openai",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { const title = item.json.title || ''; item.json.openai_body = { model: \"gpt-4o-mini\", temperature: 0.2, messages: [ { role: \"system\", content: \"Du bist ein Übersetzer DE→FA. Stil locker. Übersetze nur den Titel prägnant ins Persische. Eigennamen transliterieren (z.B. Bayern München→بایرن مونیخ). Keine Erklärungen, nur den übersetzten Titel.\" }, { role: \"user\", content: title } ] }; return item; });"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
-        -336
+        2048,
+        -256
+      ],
+      "id": "f4a2bb54-6b8e-4f5f-9b2c-889a2ce6a0a2",
+      "name": "Build OpenAI body"
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "options": {
+          "redirect": {
+            "redirect": "error"
+          }
+        },
+        "sendHeaders": true,
+        "jsonParameters": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "bodyParametersJson": "={{ $json.openai_body }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2272,
+        -256
+      ],
+      "id": "d0c1d3a0-5d91-4f1d-b2c1-31e7e4f7c0ef",
+      "name": "OpenAI Translate (HTTP)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { const content = item.json.body?.choices?.[0]?.message?.content || ''; item.json.title_fa = (content || '').trim(); return item; });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        -256
+      ],
+      "id": "b91f8f3a-8e4f-4b30-bcf6-7b8a2c64a2c1",
+      "name": "Pick title_fa (OpenAI)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { const title = item.json.title || ''; const prompt = `ترجمه سریع آلمانی→فارسی، لحن خودمانی و خبری؛ فقط تیتر نهایی.\\nنام‌های خاص را با رسم‌الخط رایج فارسی بنویس (مثال: Bayern München → بایرن مونیخ).\\n\\nTITEL:\\n${title}`; item.json.gemini_body = { contents: [ { role: \"user\", parts: [ { text: prompt } ] } ], generationConfig: { temperature: 0.2 } }; return item; });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        -64
+      ],
+      "id": "8f8c9c79-5c4c-4a8f-b3a3-9c1c1c8e9f10",
+      "name": "Build Gemini body"
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "options": {
+          "redirect": {
+            "redirect": "error"
+          }
+        },
+        "jsonParameters": true,
+        "sendQuery": true,
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "key",
+              "value": "REPLACE_WITH_YOUR_GEMINI_API_KEY"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "authentication": "none",
+        "bodyParametersJson": "={{ $json.gemini_body }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2272,
+        -64
+      ],
+      "id": "e1b7b3d7-3ec5-4a2a-b2f8-0a3d6a0b7c5f",
+      "name": "Gemini Translate (HTTP)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { const text = item.json.body?.candidates?.[0]?.content?.parts?.[0]?.text || ''; item.json.title_fa = (text || '').trim(); return item; });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        -64
+      ],
+      "id": "6f4c2f7a-6e4d-4c7a-9b50-2d8f8a7c9f21",
+      "name": "Pick title_fa (Gemini)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input1"
+      },
+      "id": "0a9f8e74-2d3c-45b0-8d2d-219d1d9e2b3a",
+      "name": "Merge translations",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cutoff = new Date(Date.now() - 20 * 60 * 1000); return items.filter(item => { const j = item.json; const d = new Date(j.isoDate || j.pubDate || j.date || j.pubdate || 0); return d > cutoff; });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        -160
       ],
       "id": "2fc7d14d-7a3b-46e5-a9bd-2c3bf8e2a7fb",
       "name": "Time window (last 20 min)"
@@ -201,6 +379,112 @@
       ]
     },
     "Code": {
+      "main": [
+        [
+          {
+            "node": "Set provider (openai|gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set provider (openai|gemini)": {
+      "main": [
+        [
+          {
+            "node": "IF provider == openai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF provider == openai": {
+      "main": [
+        [
+          {
+            "node": "Build OpenAI body",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Gemini body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build OpenAI body": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Translate (HTTP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Translate (HTTP)": {
+      "main": [
+        [
+          {
+            "node": "Pick title_fa (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick title_fa (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Merge translations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gemini body": {
+      "main": [
+        [
+          {
+            "node": "Gemini Translate (HTTP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Translate (HTTP)": {
+      "main": [
+        [
+          {
+            "node": "Pick title_fa (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick title_fa (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Merge translations",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge translations": {
       "main": [
         [
           {
