@@ -40,7 +40,8 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": false,
+            "caseSensitive": true,
+            "leftValue": "",
             "typeValidation": "strict",
             "version": 2
           },
@@ -141,24 +142,11 @@
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => { const j = item.json; let image = null; if (j.enclosure && j.enclosure.url) image = j.enclosure.url; if (!image && j[\"media:content\"] && j[\"media:content\"].url) image = j[\"media:content\"].url; if (!image && typeof j.content === 'string') { const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i); if (m) image = m[1]; } const rawTeaser = (j.summary || j.description || ''); const teaser = typeof rawTeaser === 'string' ? rawTeaser.replace(/<[^>]*>/g, '').trim() : ''; item.json.imageUrl = image || null; item.json.teaser = teaser; return item; });"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1104,
-        -240
-      ],
-      "id": "0734a457-9592-47b5-8a8f-87c199860656",
-      "name": "Code"
-    },
-    {
-      "parameters": {
         "values": {
           "string": [
             {
               "name": "provider",
-              "value": "=openAi"
+              "value": "=openai"
             }
           ]
         },
@@ -255,7 +243,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => { const content = item.json.body?.choices?.[0]?.message?.content || ''; item.json.title_fa = (content || '').trim(); return item; });"
+        "jsCode": "// Run Once for All Items\nconst inputItems = $input.all();\n\nreturn inputItems.map(item => {\n  const r = item.json.body ?? item.json;\n  const content = r?.choices?.[0]?.message?.content || '';\n  item.json.title_fa = (content || '').trim();\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -332,7 +320,7 @@
       "typeVersion": 2,
       "position": [
         2448,
-        -240
+        -336
       ],
       "id": "881a606e-4ea0-4f05-827a-369f6cbdb44b",
       "name": "Time window (last 20 min)"
@@ -345,10 +333,69 @@
       "typeVersion": 2,
       "position": [
         2672,
-        -240
+        -336
       ],
       "id": "5992093d-5b39-4107-9c92-541e5cb65853",
       "name": "Build caption"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9ccce2fc-4fd6-4b2b-b39a-2fc96fc09d75",
+              "leftValue": "=={{ $json.imageUrl || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4194c4a8-c062-4a70-8a68-32f6b7e5c0b0",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2896,
+        -336
+      ],
+      "id": "eab4f7d8-23b3-4bb1-a452-5d95954a2bab",
+      "name": "IF has image"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node v2 – Run once for all items\nconst inputItems = $input.all();\n\nreturn inputItems.map(item => {\n  const j = item.json;\n  let image = null;\n\n  // 1) Standard-RSS-Felder\n  if (j.enclosure?.url) image = j.enclosure.url;\n  if (!image && j['media:content']?.url) image = j['media:content'].url;\n\n  // 2) Alternative Media-Felder\n  if (!image && j['media:thumbnail']?.url) image = j['media:thumbnail'].url;\n  if (!image && j['media:group']?.['media:content']?.url) image = j['media:group']['media:content'].url;\n\n  // 3) Notlösung: <img src=\"...\"> aus HTML extrahieren\n  const html = (j.content || j.summary || j.description || '');\n  if (!image && typeof html === 'string') {\n    const m = html.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m) image = m[1];\n  }\n\n  // Teaser ohne HTML\n  const rawTeaser = (j.summary || j.description || '');\n  const teaser = typeof rawTeaser === 'string'\n    ? rawTeaser.replace(/<[^>]*>/g, '').trim()\n    : '';\n\n  item.json.imageUrl = image || '';\n  item.json.teaser = teaser;\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -240
+      ],
+      "id": "0734a457-9592-47b5-8a8f-87c199860656",
+      "name": "Extract imageUrl & teaser"
     }
   ],
   "connections": {
@@ -378,18 +425,7 @@
       "main": [
         [
           {
-            "node": "Code",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code": {
-      "main": [
-        [
-          {
-            "node": "Set provider (openai|gemini)",
+            "node": "Extract imageUrl & teaser",
             "type": "main",
             "index": 0
           }
@@ -482,13 +518,7 @@
     },
     "Pick title_fa (Gemini)": {
       "main": [
-        [
-          {
-            "node": "Time window (last 20 min)",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Time window (last 20 min)": {
@@ -496,6 +526,28 @@
         [
           {
             "node": "Build caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build caption": {
+      "main": [
+        [
+          {
+            "node": "IF has image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract imageUrl & teaser": {
+      "main": [
+        [
+          {
+            "node": "Set provider (openai|gemini)",
             "type": "main",
             "index": 0
           }
