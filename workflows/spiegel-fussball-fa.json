@@ -197,7 +197,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => { const title = item.json.title || ''; item.json.openai_body = { model: \"gpt-4o-mini\", temperature: 0.2, messages: [ { role: \"system\", content: \"Du bist ein Übersetzer DE→FA. Stil locker. Übersetze nur den Titel prägnant ins Persische. Eigennamen transliterieren (z.B. Bayern München→بایرن مونیخ). Keine Erklärungen, nur den übersetzten Titel.\" }, { role: \"user\", content: title } ] }; return item; });"
+        "jsCode": "// Code v2 — Run once for all items\nconst inputItems = $input.all();\n\nreturn inputItems.map(item => {\n  const title = item.json.title || '';\n\n  item.json.openai_body = {\n    model: \"gpt-4o-mini\",\n    temperature: 0.2,\n    messages: [\n      {\n        role: \"system\",\n        content:\n          \"Du bist ein Übersetzer DE→FA. Stil locker. Übersetze nur den Titel prägnant ins Persische. Eigennamen transliterieren (z.B. Bayern München→بایرن مونیخ). Keine Erklärungen, nur den übersetzten Titel.\"\n      },\n      { role: \"user\", content: title }\n    ]\n  };\n\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
