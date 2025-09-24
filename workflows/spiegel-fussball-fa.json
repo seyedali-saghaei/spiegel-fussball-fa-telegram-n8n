@@ -158,7 +158,7 @@
           "string": [
             {
               "name": "provider",
-              "value": "openai"
+              "value": "=openAi"
             }
           ]
         },
@@ -331,20 +331,20 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2480,
-        -144
+        2448,
+        -240
       ],
       "id": "881a606e-4ea0-4f05-827a-369f6cbdb44b",
       "name": "Time window (last 20 min)"
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => {\n  const j = item.json;\n  const titleFa = (j.title_fa || j.title || '').toString().trim();\n  const link = (j.link || j.guid || '').toString().trim();\n\n  // Caption: only headline + source + link\n  let caption = titleFa;\n  if (link) caption += `\\n\\nمنبع: SPIEGEL\\n${link}`;\n\n  // Telegram caption safety (~1024 soft limit)\n  if (caption.length > 1000 && link) {\n    caption = caption.slice(0, 980) + '…\\n' + link;\n  } else if (caption.length > 1000) {\n    caption = caption.slice(0, 1000);\n  }\n\n  j.caption = caption;\n  return item;\n});\n"
+        "jsCode": "// Build Telegram caption: FA title + source + link (max ~1000 chars)\nreturn items.map(item => {\n  const j = item.json;\n\n  const titleFa = (j.title_fa || j.title || '').toString().trim();\n  const link = (j.link || j.guid || '').toString().trim();\n\n  // Caption: nur Überschrift + Quelle + Link (gemäß Vorgabe)\n  let caption = titleFa;\n  if (link) caption += `\\n\\nمنبع: SPIEGEL\\n${link}`;\n\n  // Telegram: Caption-Limit ~1024 (safe cut)\n  if (caption.length > 1000) {\n    // wenn Link existiert, Platz für Link freilassen\n    if (link && !caption.endsWith(link)) {\n      const roomForLink = 1 + link.length; // \"\\n\" + link\n      caption = caption.slice(0, Math.max(0, 1000 - roomForLink - 1)) + '…\\n' + link;\n    } else {\n      caption = caption.slice(0, 1000);\n    }\n  }\n\n  j.caption = caption;\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2896,
+        2672,
         -240
       ],
       "id": "5992093d-5b39-4107-9c92-541e5cb65853",
