@@ -197,7 +197,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Code v2 — Run once for all items\nconst inputItems = $input.all();\n\nreturn inputItems.map(item => {\n  const title = item.json.title || '';\n\n  item.json.openai_body = {\n    model: \"gpt-4o-mini\",\n    temperature: 0.2,\n    messages: [\n      {\n        role: \"system\",\n        content:\n          \"Du bist ein Übersetzer DE→FA. Stil locker. Übersetze nur den Titel prägnant ins Persische. Eigennamen transliterieren (z.B. Bayern München→بایرن مونیخ). Keine Erklärungen, nur den übersetzten Titel.\"\n      },\n      { role: \"user\", content: title }\n    ]\n  };\n\n  return item;\n});\n"
+        "jsCode": "// Code node v2  (Build OpenAI body)\nconst items = $input.all();\n\nreturn items.map(item => {\n  const j = item.json || {};\n  const title = (j.title || '').toString();\n  const teaserDe = (j.teaser_de || '').toString();\n\n  item.json.openai_body = {\n    model: \"gpt-4o-mini\",\n    temperature: 0.2,\n    response_format: { type: \"json_object\" },\n    messages: [\n      {\n        role: \"system\",\n        content: \"Du bist ein Übersetzer DE→FA. Stil locker, natürlich, prägnant. Eigennamen transliterieren (z.B. Bayern München→بایرن مونیخ). Antworte NUR als JSON {\\\"title_fa\\\":\\\"...\\\",\\\"teaser_fa\\\":\\\"...\\\"} ohne Erklärungen.\"\n      },\n      {\n        role: \"user\",\n        content:\n`Titel:\n${title}\n\nErster Absatz:\n${teaserDe}`\n      }\n    ]\n  };\n\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
