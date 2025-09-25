@@ -236,7 +236,7 @@
       "typeVersion": 4,
       "position": [
         2000,
-        -504
+        -512
       ],
       "id": "375ababe-15d7-4d6d-98b4-933cdf726c3e",
       "name": "OpenAI Translate (HTTP)"
@@ -340,7 +340,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Code Node v2 – Run once for all items\nconst inputItems = $input.all();\n\nreturn inputItems.map(item => {\n  const j = item.json;\n  let image = null;\n\n  // 1) Standard-RSS-Felder\n  if (j.enclosure?.url) image = j.enclosure.url;\n  if (!image && j['media:content']?.url) image = j['media:content'].url;\n\n  // 2) Alternative Media-Felder\n  if (!image && j['media:thumbnail']?.url) image = j['media:thumbnail'].url;\n  if (!image && j['media:group']?.['media:content']?.url) image = j['media:group']['media:content'].url;\n\n  // 3) Notlösung: <img src=\"...\"> aus HTML extrahieren\n  const html = (j.content || j.summary || j.description || '');\n  if (!image && typeof html === 'string') {\n    const m = html.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m) image = m[1];\n  }\n\n  // Teaser ohne HTML\n  const rawTeaser = (j.summary || j.description || '');\n  const teaser = typeof rawTeaser === 'string'\n    ? rawTeaser.replace(/<[^>]*>/g, '').trim()\n    : '';\n\n  item.json.imageUrl = image || '';\n  item.json.teaser = teaser;\n\n  return item;\n});\n"
+        "jsCode": "// Code node v2\nconst input = $input.all();\n\nfunction stripHtml(s=''){\n  return s.replace(/<[^>]*>/g,'').replace(/\\s+/g,' ').trim();\n}\nfunction firstParagraphFromHtml(html=''){\n  // Falls <p>...</p> existiert, den ersten nehmen\n  const m = html.match(/<p[^>]*>([\\s\\S]*?)<\\/p>/i);\n  if (m) return stripHtml(m[1]);\n  // Fallback: nach Leerzeilen splitten\n  const text = stripHtml(html);\n  return text.split(/(?:\\n\\s*\\n)|(?:\\r?\\n){2,}/)[0] || text;\n}\n\nreturn input.map(item => {\n  const j = item.json || {};\n  let image = j.enclosure?.url\n           || j['media:content']?.url\n           || j['media:thumbnail']?.url\n           || j['media:group']?.['media:content']?.url\n           || '';\n\n  const html = (j.content || j.summary || j.description || '');\n  const teaser = typeof html === 'string' ? firstParagraphFromHtml(html) : '';\n\n  item.json.imageUrl  = image || '';\n  item.json.teaser_de = teaser || '';\n\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
