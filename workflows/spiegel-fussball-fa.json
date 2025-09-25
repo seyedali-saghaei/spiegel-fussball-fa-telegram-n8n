@@ -243,7 +243,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Run Once for All Items\nconst inputItems = $input.all();\n\nreturn inputItems.map(item => {\n  const r = item.json.body ?? item.json;\n  const content = r?.choices?.[0]?.message?.content || '';\n  item.json.title_fa = (content || '').trim();\n  return item;\n});\n"
+        "jsCode": "// Code node v2  (Pick FA fields)\nconst out = $input.all().map(item => {\n  const r = item.json.body ?? item.json; // HTTP node packt Antwort oft unter .body\n  const raw = r?.choices?.[0]?.message?.content || '';\n  let title_fa = '', teaser_fa = '';\n\n  try {\n    const parsed = JSON.parse(raw);\n    title_fa = (parsed.title_fa || '').trim();\n    teaser_fa = (parsed.teaser_fa || '').trim();\n  } catch (e) {\n    // Fallback: sollte selten passieren (response_format erzwingt JSON)\n    title_fa = raw.trim();\n    teaser_fa = '';\n  }\n\n  item.json.title_fa  = title_fa;\n  item.json.teaser_fa = teaser_fa;\n  return item;\n});\nreturn out;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
