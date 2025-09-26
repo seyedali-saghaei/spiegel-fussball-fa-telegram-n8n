@@ -3,41 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "triggerTimes": {
-          "item": [
-            {
-              "mode": "everyX",
-              "value": 15,
-              "unit": "minutes"
-            }
-          ]
-        }
-      },
-      "id": "8595560a-a9e9-4b15-be53-7c856444b207",
-      "name": "Cron (every 15 min)",
-      "type": "n8n-nodes-base.cron",
-      "typeVersion": 1,
-      "position": [
-        432,
-        -576
-      ]
-    },
-    {
-      "parameters": {
-        "url": "https://www.spiegel.de/sport/fussball/index.rss",
-        "options": {}
-      },
-      "id": "ec9297fa-c5ed-47fb-8ac1-0a00787ab0a3",
-      "name": "RSS Read (SPIEGEL Fußball)",
-      "type": "n8n-nodes-base.rssFeedRead",
-      "typeVersion": 1,
-      "position": [
-        656,
-        -576
-      ]
-    },
-    {
-      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -134,8 +99,8 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
-        880,
-        -576
+        1328,
+        384
       ],
       "id": "35407f8c-6022-463d-b0a2-1a1d4d395757",
       "name": "Filter (men-only)"
@@ -157,8 +122,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
-        1328,
-        -576
+        1776,
+        384
       ]
     },
     {
@@ -191,8 +156,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1552,
-        -576
+        2000,
+        384
       ]
     },
     {
@@ -202,8 +167,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1776,
-        -592
+        2224,
+        384
       ],
       "id": "5ae2c560-e13e-4527-9aa4-96f44c64ff11",
       "name": "Build OpenAI body"
@@ -235,8 +200,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2000,
-        -512
+        2448,
+        464
       ],
       "id": "375ababe-15d7-4d6d-98b4-933cdf726c3e",
       "name": "OpenAI Translate (HTTP)"
@@ -248,79 +213,21 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2448,
-        -576
+        2896,
+        384
       ],
       "id": "6aea3ecd-443f-4bc4-9f0e-665ca0508cf5",
       "name": "Pick title_fa (OpenAI)"
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => { const title = item.json.title || ''; const prompt = `ترجمه سریع آلمانی→فارسی، لحن خودمانی و خبری؛ فقط تیتر نهایی.\\nنام‌های خاص را با رسم‌الخط رایج فارسی بنویس (مثال: Bayern München → بایرن مونیخ).\\n\\nTITEL:\\n${title}`; item.json.gemini_body = { contents: [ { role: \"user\", parts: [ { text: prompt } ] } ], generationConfig: { temperature: 0.2 } }; return item; });"
+        "jsCode": "// Filter items: keep only those newer than 20 minutes\nconst cutoff = Date.now() - 20 * 60  * 60 * 1000;\n\n// In Code-Node v2 benutzen wir $input.all() um alle Items zu holen\nconst inputItems = $input.all();\nconst out = [];\n\nfor (const item of inputItems) {\n  const j = item.json;\n\n  // Mögliche Datumsfelder aus dem RSS\n  const candidates = [j.isoDate, j.pubDate, j.date, j.pubdate];\n\n  let pubDate = null;\n  for (const c of candidates) {\n    if (!c) continue;\n    const d = new Date(c);\n    if (!isNaN(d.getTime())) {\n      pubDate = d;\n      break;\n    }\n  }\n\n  // Falls kein Datum gefunden → (für Tests) durchlassen\n  if (!pubDate) {\n    out.push(item);\n    continue;\n  }\n\n  if (pubDate.getTime() > cutoff) {\n    out.push(item); // neu genug → behalten\n  }\n}\n\n// Array von Items zurückgeben\nreturn out;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        432,
-        -256
-      ],
-      "id": "7343f566-6e97-4c32-b13d-afee6d70e4ac",
-      "name": "Build Gemini body"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-        "authentication": "predefinedCredentialType",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {}
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {}
-          ]
-        },
-        "options": {
-          "redirect": {
-            "redirect": {}
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [
-        656,
-        -256
-      ],
-      "id": "f7f42b82-d724-4b36-b38b-6202aad561c8",
-      "name": "Gemini Translate (HTTP)"
-    },
-    {
-      "parameters": {
-        "jsCode": "return items.map(item => { const text = item.json.body?.candidates?.[0]?.content?.parts?.[0]?.text || ''; item.json.title_fa = (text || '').trim(); return item; });"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        880,
-        -256
-      ],
-      "id": "8a4b2202-8308-4f01-a3c3-1700489e0b3c",
-      "name": "Pick title_fa (Gemini)"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Filter items: keep only those newer than 20 minutes\nconst cutoff = Date.now() - 20*60  * 60 * 1000; // 20 Minuten * 60 * 1000;\n\n// In Code-Node v2 benutzen wir $input.all() um alle Items zu holen\nconst inputItems = $input.all();\nconst out = [];\n\nfor (const item of inputItems) {\n  const j = item.json;\n\n  // Mögliche Datumsfelder aus dem RSS\n  const candidates = [j.isoDate, j.pubDate, j.date, j.pubdate];\n\n  let pubDate = null;\n  for (const c of candidates) {\n    if (!c) continue;\n    const d = new Date(c);\n    if (!isNaN(d.getTime())) {\n      pubDate = d;\n      break;\n    }\n  }\n\n  // Falls kein Datum gefunden → (für Tests) durchlassen\n  if (!pubDate) {\n    out.push(item);\n    continue;\n  }\n\n  if (pubDate.getTime() > cutoff) {\n    out.push(item); // neu genug → behalten\n  }\n}\n\n// Array von Items zurückgeben\nreturn out;\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2672,
-        -576
+        3120,
+        384
       ],
       "id": "881a606e-4ea0-4f05-827a-369f6cbdb44b",
       "name": "Time window (last 20 min)"
@@ -332,8 +239,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2896,
-        -576
+        3344,
+        384
       ],
       "id": "5992093d-5b39-4107-9c92-541e5cb65853",
       "name": "Build caption"
@@ -345,21 +252,21 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1104,
-        -576
+        1552,
+        384
       ],
       "id": "0734a457-9592-47b5-8a8f-87c199860656",
       "name": "Extract imageUrl & teaser"
     },
     {
       "parameters": {
-        "jsCode": "// Code node v2  (Build Telegram payload)\nconst items = $input.all();\n\nconst esc = (s='') => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n\nfunction hostFrom(link=''){\n  const m = link.match(/^https?:\\/\\/([^\\/?#]+)/i);\n  return m ? m[1].replace(/^www\\./,'') : '';\n}\n\nfunction cappedCaption(html, max=1024){\n  if (html.length <= max) return html;\n  return html.slice(0, max-1) + '…';\n}\n\nreturn items.map(i => {\n  const j = i.json || {};\n  const titleFa  = (j.title_fa  || j.title || '').trim();\n  const teaserFa = (j.teaser_fa || '').trim();\n  const link     = (j.link || j.guid || '').toString().trim();\n  let photo      = (j.imageUrl || '').toString().trim();\n\n  let caption = `📰 <b>${esc(titleFa)}</b>`;\n  if (teaserFa) caption += `\\n${esc(teaserFa)}`;\n\n  if (link) {\n    const host = hostFrom(link) || 'لینک خبر';\n    caption += `\\n\\n🔗 <a href=\"${esc(link)}\">${esc(host)}</a>`;\n  }\n\n  // Kanalhandle immer anhängen\n  caption += `\\n\\n@FootbllSpiegelFa`;\n\n  caption = cappedCaption(caption, 1024);\n\n  // Text-Fallback: identisch mit Caption\n  const text = caption;\n\n  return {\n    json: {\n      ...j,\n      telegram: {\n        photo,\n        caption,\n        text,\n        replyMarkup: link ? { inline_keyboard: [[{ text: 'لینک خبر 🔗', url: link }]] } : undefined\n      }\n    }\n  };\n});\n"
+        "jsCode": "// Code node v2  (Build Telegram payload)\nconst items = $input.all();\n\nconst esc = (s='') =>\n  s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n\nfunction hostFrom(link=''){\n  const m = link.match(/^https?:\\/\\/([^\\/?#]+)/i);\n  return m ? m[1].replace(/^www\\./,'') : '';\n}\n\n// sanftes Trimmen von Plaintext (vor HTML-Escaping), um Wortgrenzen zu respektieren\nfunction truncatePlain(s = '', max = 700) {\n  if (s.length <= max) return s;\n  const cut = s.slice(0, max);\n  const back = cut.lastIndexOf(' ');\n  return (back > 40 ? cut.slice(0, back) : cut) + '…';\n}\n\n// Caption-Limit für Telegram sicher handhaben, inkl. RTL-PDF am Ende\nfunction capRTL(s, max = 1024, PDF = '\\u202C') {\n  if (s.length <= max) return s;\n  // Falls am Ende bereits ein PDF steht, kurz entfernen, dann wieder anhängen\n  const withoutPDF = s.replace(/\\u202C$/, '');\n  const cut = withoutPDF.slice(0, max - 1); // Platz für Ellipsis lassen\n  return cut + '…' + PDF;\n}\n\n// RTL/LTR Steuerzeichen\nconst RLE = '\\u202B'; // Right-to-Left Embedding\nconst PDF = '\\u202C'; // Pop Directional Formatting\nconst LRI = '\\u2066'; // Left-to-Right Isolate\nconst PDI = '\\u2069'; // Pop Directional Isolate\n\n// Optional: sehr lockere Foto-Validierung (nur wenn du willst)\n// const isValidPhoto = (u='') => /^https?:\\/\\//i.test(u) && /(jpg|jpeg|png|gif)(\\?|$)/i.test(u);\n\nreturn items.map(i => {\n  const j = i.json || {};\n\n  const titleFa  = (j.title_fa  || j.title || '').toString().trim();\n  const teaserFa = (j.teaser_fa || '').toString().trim();\n  const link     = (j.link || j.guid || '').toString().trim();\n  let   photo    = (j.imageUrl || '').toString().trim();\n  // if (!isValidPhoto(photo)) photo = '';\n\n  // Teaser vorab (plaintext) begrenzen, damit wir später HTML nicht zerreißen\n  const teaserTrimmed = truncatePlain(teaserFa, 700);\n\n  // Kern der Caption (noch ohne globale RTL-Hülle)\n  let captionCore = `📰 <b>${esc(titleFa)}</b>`;\n  if (teaserTrimmed) captionCore += `\\n\\n\\n${esc(teaserTrimmed)}`;\n\n  if (link) {\n    const host = hostFrom(link) || 'لینک خبر';\n    // Host/Link LTR-kapseln, damit RTL-Layout stabil bleibt\n    const hostHtml = `${LRI}<a href=\"${esc(link)}\">${esc(host)}</a>${PDI}`;\n    captionCore += `\\n\\n🔗 ${hostHtml}`;\n  }\n\n  // Kanalhandle (lateinisch) ebenfalls LTR isolieren\n  const channelHandle = `${LRI}@FootbllSpiegelFa${PDI}`;\n  captionCore += `\\n\\n${channelHandle}`;\n\n  // Ganze Caption in RTL einbetten\n  let caption = `${RLE}${captionCore}${PDF}`;\n\n  // Fallback-Text = identisch\n  let text = caption;\n\n  // RTL-sicher kürzen (Ellipsis + PDF ans Ende)\n  caption = capRTL(caption, 1024, PDF);\n  text    = capRTL(text,    4096, PDF); // Text kann länger sein; 4096 reicht komfortabel\n\n  return {\n    json: {\n      ...j,\n      telegram: {\n        photo,\n        caption,\n        text,\n        replyMarkup: link\n          ? { inline_keyboard: [[{ text: 'لینک خبر 🔗', url: link }]] }\n          : undefined\n      }\n    }\n  };\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3120,
-        -576
+        3568,
+        384
       ],
       "id": "8b1e2a96-795f-4f7d-a7f0-c5b8f2680ead",
       "name": "Build Telegram payload"
@@ -392,8 +299,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3344,
-        -576
+        3792,
+        384
       ],
       "id": "6ffe8923-58fd-496d-bdaa-11bee40697ce",
       "name": "IF has image"
@@ -409,8 +316,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3568,
-        -480
+        4016,
+        480
       ],
       "id": "3659fc1f-7a48-45b0-bb09-308158762d95",
       "name": "Send a text message"
@@ -428,24 +335,11 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3568,
-        -672
+        4016,
+        288
       ],
       "id": "894afe56-770c-4653-b790-7ee74e25e1cd",
       "name": "Send a photo message"
-    },
-    {
-      "parameters": {
-        "jsCode": "return $input.all().map(i => ({ json: { title: i.json.title, imageUrl: i.json.imageUrl }}));\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        432,
-        -896
-      ],
-      "id": "04ca9758-ffd2-43b3-8b99-0961aa88ce82",
-      "name": "Code"
     },
     {
       "parameters": {
@@ -456,36 +350,201 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        2224,
-        -576
+        2672,
+        384
       ],
       "id": "b1c1a1c0-a967-40d6-aedb-1c769a8cba6c",
       "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://www.spiegel.de/sport/fussball/index.rss",
+        "options": {}
+      },
+      "id": "82d18423-3c5d-4407-9f1f-555063af7cce",
+      "name": "RSS Read (SPIEGEL Fußball)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        656,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize + de-duplicate + sort items from multiple RSS feeds\n// Output fields: sourceHost, sourceFeed, title, link, isoDate, pubDate, content, imageUrl\n\n/** @type {Array<{json: any}>} */\nconst items = $input.all();\n\n/**\n * @param {string} [link]\n */\nfunction hostFrom(link = '') {\n  const m = (link || '').match(/^https?:\\/\\/([^\\/?#]+)/i);\n  return m ? m[1].replace(/^www\\./, '') : '';\n}\n\n/**\n * Robust image picker across common RSS shapes\n * @param {Record<string, any>} [j]\n * @returns {string}\n */\nfunction pickImage(j = {}) {\n  // media:content can be an object or an array\n  const media = j['media:content'];\n  if (media) {\n    if (Array.isArray(media)) {\n      const m = media.find(x => x && x.url);\n      if (m?.url) return String(m.url);\n    } else if (typeof media === 'object' && media.url) {\n      return String(media.url);\n    }\n  }\n\n  const enc = j.enclosure;\n  if (enc && typeof enc === 'object' && enc.url) return String(enc.url);\n\n  const img = j.image;\n  if (img && typeof img === 'object' && img.url) return String(img.url);\n\n  if (j.thumbnail?.url) return String(j.thumbnail.url);\n\n  // manche Feeds packen Bilder in content:encoded als <img ...>\n  if (typeof j.content === 'string') {\n    const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m && m[1]) return m[1];\n  }\n\n  return '';\n}\n\nconst seen = new Set();\nlet out = [];\n\n/** @param {any} v */ const toStr = (v) => (v ?? '').toString().trim();\n\nfor (const it of items) {\n  const j = it.json ?? {};\n  const link = toStr(j.link || j.guid);\n  if (!link || seen.has(link)) continue;\n  seen.add(link);\n\n  // date normalization\n  const rawDate = j.isoDate || j.pubDate || j.date || null;\n  let iso = null, pubDate = null;\n  if (rawDate) {\n    const ts = Date.parse(rawDate);\n    if (!Number.isNaN(ts)) {\n      const d = new Date(ts);\n      iso = d.toISOString();\n      pubDate = d.toUTCString();\n    }\n  }\n\n  out.push({\n    json: {\n      sourceHost: hostFrom(link) || hostFrom(j.feedUrl || ''),\n      sourceFeed: j.feedTitle || j.meta?.title || j.source || '',\n      title: toStr(j.title),\n      link,\n      isoDate: iso,\n      pubDate: pubDate,\n      content: toStr(j.contentSnippet || j.summary || j.content),\n      imageUrl: pickImage(j),\n    },\n  });\n}\n\n// sort desc by isoDate (nulls last)\nout.sort((a, b) => {\n  const ta = a.json.isoDate ? Date.parse(a.json.isoDate) : 0;\n  const tb = b.json.isoDate ? Date.parse(b.json.isoDate) : 0;\n  return tb - ta;\n});\n\n// optional limit\nconst limit = 100;\nif (out.length > limit) out = out.slice(0, limit);\n\nreturn out;\n"
+      },
+      "id": "f4a48bd4-ebe3-4f9e-b676-1a88091a7de0",
+      "name": "Code (Normalize + Dedupe + Sort)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 15,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "0bd100cd-3521-4489-9220-29e0b42e714d",
+      "name": "Cron (every 15 min)1",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        432,
+        384
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6984f2f9-895f-4ffd-8b54-c2fd35bff733",
+      "name": "Merge Feeds1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        880,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.t-online.de/rss/transfermarkt",
+        "options": {}
+      },
+      "id": "95a7e6c8-95dc-41f9-bd12-29372e7cbbf8",
+      "name": "RSS Read (t-online Transfermarkt)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        656,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://rss.sueddeutsche.de/rss/Sport",
+        "options": {}
+      },
+      "id": "06a80daa-eb3d-4330-a22f-ef4459c7f5e1",
+      "name": "RSS Read (SZ Sport)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        656,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.feedburner.com/spox-sport",
+        "options": {}
+      },
+      "id": "434bf4de-2947-45c7-ac68-b0727016d671",
+      "name": "RSS Read (SPOX Fußball)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        656,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.transfermarkt.de/rss/news",
+        "options": {}
+      },
+      "id": "f4414da5-81b9-473d-8914-3f127541a09f",
+      "name": "RSS Read (Transfermarkt)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        656,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://newsfeed.kicker.de/news/aktuell",
+        "options": {}
+      },
+      "id": "db934fea-0260-486d-bf19-bf76e6860e65",
+      "name": "RSS Read (kicker News)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        656,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { const text = item.json.body?.candidates?.[0]?.content?.parts?.[0]?.text || ''; item.json.title_fa = (text || '').trim(); return item; });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        1088
+      ],
+      "id": "8a4b2202-8308-4f01-a3c3-1700489e0b3c",
+      "name": "Pick title_fa (Gemini)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        656,
+        1088
+      ],
+      "id": "f7f42b82-d724-4b36-b38b-6202aad561c8",
+      "name": "Gemini Translate (HTTP)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { const title = item.json.title || ''; const prompt = `ترجمه سریع آلمانی→فارسی، لحن خودمانی و خبری؛ فقط تیتر نهایی.\\nنام‌های خاص را با رسم‌الخط رایج فارسی بنویس (مثال: Bayern München → بایرن مونیخ).\\n\\nTITEL:\\n${title}`; item.json.gemini_body = { contents: [ { role: \"user\", parts: [ { text: prompt } ] } ], generationConfig: { temperature: 0.2 } }; return item; });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        1088
+      ],
+      "id": "7343f566-6e97-4c32-b13d-afee6d70e4ac",
+      "name": "Build Gemini body"
     }
   ],
   "connections": {
-    "Cron (every 15 min)": {
-      "main": [
-        [
-          {
-            "node": "RSS Read (SPIEGEL Fußball)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "RSS Read (SPIEGEL Fußball)": {
-      "main": [
-        [
-          {
-            "node": "Filter (men-only)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Filter (men-only)": {
       "main": [
         [
@@ -558,33 +617,6 @@
         ]
       ]
     },
-    "Build Gemini body": {
-      "main": [
-        [
-          {
-            "node": "Gemini Translate (HTTP)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Gemini Translate (HTTP)": {
-      "main": [
-        [
-          {
-            "node": "Pick title_fa (Gemini)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pick title_fa (Gemini)": {
-      "main": [
-        []
-      ]
-    },
     "Time window (last 20 min)": {
       "main": [
         [
@@ -652,16 +684,157 @@
         []
       ]
     },
-    "Code": {
-      "main": [
-        []
-      ]
-    },
     "Merge": {
       "main": [
         [
           {
             "node": "Pick title_fa (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (SPIEGEL Fußball)": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron (every 15 min)1": {
+      "main": [
+        [
+          {
+            "node": "RSS Read (SPIEGEL Fußball)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read (kicker News)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read (Transfermarkt)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read (SPOX Fußball)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read (SZ Sport)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read (t-online Transfermarkt)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Feeds1": {
+      "main": [
+        [
+          {
+            "node": "Code (Normalize + Dedupe + Sort)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (Normalize + Dedupe + Sort)": {
+      "main": [
+        [
+          {
+            "node": "Filter (men-only)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (t-online Transfermarkt)": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (SZ Sport)": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (SPOX Fußball)": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (Transfermarkt)": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read (kicker News)": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Translate (HTTP)": {
+      "main": [
+        [
+          {
+            "node": "Pick title_fa (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gemini body": {
+      "main": [
+        [
+          {
+            "node": "Gemini Translate (HTTP)",
             "type": "main",
             "index": 0
           }
