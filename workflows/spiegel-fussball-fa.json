@@ -204,17 +204,7 @@
         464
       ],
       "id": "375ababe-15d7-4d6d-98b4-933cdf726c3e",
-      "name": "OpenAI Translate (HTTP)",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "M85qWBrhW6LUgZJs",
-          "name": "openai-http"
-        },
-        "openAiApi": {
-          "id": "ex7c2lmwfrZFbejG",
-          "name": "OpenAi account"
-        }
-      }
+      "name": "OpenAI Translate (HTTP)"
     },
     {
       "parameters": {
@@ -317,7 +307,7 @@
     },
     {
       "parameters": {
-        "chatId": "-1002971367902",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
         "text": "={{ $json.telegram.text }}",
         "additionalFields": {
           "parse_mode": "HTML"
@@ -330,19 +320,12 @@
         480
       ],
       "id": "3659fc1f-7a48-45b0-bb09-308158762d95",
-      "name": "Send a text message",
-      "webhookId": "b5a0b437-6ee2-441e-8c30-26cf65270faf",
-      "credentials": {
-        "telegramApi": {
-          "id": "yaYLqfC3EW8JxhwD",
-          "name": "Telegram account"
-        }
-      }
+      "name": "Send a text message"
     },
     {
       "parameters": {
         "operation": "sendPhoto",
-        "chatId": "-1002971367902",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
         "file": "={{ $json.telegram.photo }}",
         "additionalFields": {
           "caption": "={{ $json.telegram.caption }}\n",
@@ -356,14 +339,7 @@
         288
       ],
       "id": "894afe56-770c-4653-b790-7ee74e25e1cd",
-      "name": "Send a photo message",
-      "webhookId": "67ac8ce5-7c23-43e0-a976-e7681e06a86d",
-      "credentials": {
-        "telegramApi": {
-          "id": "yaYLqfC3EW8JxhwD",
-          "name": "Telegram account"
-        }
-      }
+      "name": "Send a photo message"
     },
     {
       "parameters": {
@@ -568,7 +544,6 @@
       "name": "Build Gemini body"
     }
   ],
-  "pinData": {},
   "connections": {
     "Filter (men-only)": {
       "main": [
@@ -871,11 +846,5 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "9d8d2504-baf0-4524-838c-22ff4247c39c",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "74338d6634b4803f2c29b4ddb0f0645d98af0974959d1701b31f3894967620b7"
-  },
-  "id": "m8Hae79VZG5Ut0rd",
   "tags": []
 }
