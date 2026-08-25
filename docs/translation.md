@@ -1,23 +1,36 @@
-# Übersetzung (DE → FA) – Style & Prompt
+# Translation
 
-**Stil:** locker, prägnant.  
-**Eigennamen:** transliterieren (z. B. Bayern München → بایرن مونیخ).  
-**Output:** nur der übersetzte **Titel**, keine Erklärungen/Emojis/Hashtags.
+The workflow supports two translation routes selected in `Configure Translation Provider`.
 
-## Prompt (System & User)
-System:
-> Du bist ein Übersetzer DE→FA. Stil locker. Übersetze nur den Titel prägnant ins Persische. Eigennamen transliterieren (z.B. Bayern München→بایرن مونیخ). Keine Erklärungen, nur den übersetzten Titel.
+## OpenAI
 
-User:
-> ${title}
+- Endpoint: Chat Completions.
+- Default model: `gpt-4o-mini`.
+- Authentication: n8n OpenAI credential selected after import.
+- Expected output:
 
-**Temperatur:** 0.2  
-**Modell (ENV):** `OPENAI_MODEL` (Standard: `gpt-4o-mini`).
+```json
+{
+  "title_fa": "...",
+  "teaser_fa": "..."
+}
+```
 
-## API
-Endpoint: `POST https://api.openai.com/v1/chat/completions`  
-Header: `Authorization: Bearer ${OPENAI_API_KEY}` & `Content-Type: application/json`
+## Gemini
 
-## Beispiele
-- *„Bayern siegt spät in Leipzig“* → **«پیروزی دیرهنگام بایرن در لایپزیگ»**
-- *„Kane trifft doppelt – BVB patzt“* → **«کین دبل می‌زند؛ دورتموند لغزش می‌کند»**
+- Endpoint: Gemini `generateContent`.
+- Authentication: `GEMINI_API_KEY` from the n8n runtime environment.
+- The request asks for JSON using the same `title_fa` and `teaser_fa` contract.
+- `Merge Gemini Context` combines the API response with the original article fields before parsing.
+
+## Style
+
+- Natural, concise Persian suitable for a Telegram news channel.
+- Preserve factual meaning.
+- Use established Persian spellings for clubs, players and locations.
+- Do not add facts that are absent from the source.
+- Keep the teaser short enough for Telegram caption limits.
+
+## Failure Behaviour
+
+Invalid provider output falls back to the raw response as the title. Provider HTTP errors are not silently discarded and remain visible in the n8n execution.
