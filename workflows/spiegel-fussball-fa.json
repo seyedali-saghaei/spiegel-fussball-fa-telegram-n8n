@@ -111,14 +111,14 @@
           "string": [
             {
               "name": "provider",
-              "value": "=openai"
+              "value": "openai"
             }
           ]
         },
         "options": {}
       },
       "id": "4b612bd8-1c44-4ab0-9a1a-674ceb95ec34",
-      "name": "Set provider (openai|gemini)",
+      "name": "Configure Translation Provider",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
@@ -152,7 +152,7 @@
         "options": {}
       },
       "id": "aea5ef82-753f-4968-8d31-822aa8ee5687",
-      "name": "IF provider == openai",
+      "name": "Route Translation Provider",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
@@ -243,7 +243,7 @@
         384
       ],
       "id": "5992093d-5b39-4107-9c92-541e5cb65853",
-      "name": "Build caption"
+      "name": "Prepare Telegram Caption"
     },
     {
       "parameters": {
@@ -320,7 +320,7 @@
         480
       ],
       "id": "3659fc1f-7a48-45b0-bb09-308158762d95",
-      "name": "Send a text message"
+      "name": "Send Telegram Text"
     },
     {
       "parameters": {
@@ -339,7 +339,7 @@
         288
       ],
       "id": "894afe56-770c-4653-b790-7ee74e25e1cd",
-      "name": "Send a photo message"
+      "name": "Send Telegram Photo"
     },
     {
       "parameters": {
@@ -354,7 +354,7 @@
         384
       ],
       "id": "b1c1a1c0-a967-40d6-aedb-1c769a8cba6c",
-      "name": "Merge"
+      "name": "Merge OpenAI Context"
     },
     {
       "parameters": {
@@ -368,14 +368,15 @@
       "position": [
         656,
         -96
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "jsCode": "// Normalize + de-duplicate + sort items from multiple RSS feeds\n// Output fields: sourceHost, sourceFeed, title, link, isoDate, pubDate, content, imageUrl\n\n/** @type {Array<{json: any}>} */\nconst items = $input.all();\n\n/**\n * @param {string} [link]\n */\nfunction hostFrom(link = '') {\n  const m = (link || '').match(/^https?:\\/\\/([^\\/?#]+)/i);\n  return m ? m[1].replace(/^www\\./, '') : '';\n}\n\n/**\n * Robust image picker across common RSS shapes\n * @param {Record<string, any>} [j]\n * @returns {string}\n */\nfunction pickImage(j = {}) {\n  // media:content can be an object or an array\n  const media = j['media:content'];\n  if (media) {\n    if (Array.isArray(media)) {\n      const m = media.find(x => x && x.url);\n      if (m?.url) return String(m.url);\n    } else if (typeof media === 'object' && media.url) {\n      return String(media.url);\n    }\n  }\n\n  const enc = j.enclosure;\n  if (enc && typeof enc === 'object' && enc.url) return String(enc.url);\n\n  const img = j.image;\n  if (img && typeof img === 'object' && img.url) return String(img.url);\n\n  if (j.thumbnail?.url) return String(j.thumbnail.url);\n\n  // manche Feeds packen Bilder in content:encoded als <img ...>\n  if (typeof j.content === 'string') {\n    const m = j.content.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i);\n    if (m && m[1]) return m[1];\n  }\n\n  return '';\n}\n\nconst seen = new Set();\nlet out = [];\n\n/** @param {any} v */ const toStr = (v) => (v ?? '').toString().trim();\n\nfor (const it of items) {\n  const j = it.json ?? {};\n  const link = toStr(j.link || j.guid);\n  if (!link || seen.has(link)) continue;\n  seen.add(link);\n\n  // date normalization\n  const rawDate = j.isoDate || j.pubDate || j.date || null;\n  let iso = null, pubDate = null;\n  if (rawDate) {\n    const ts = Date.parse(rawDate);\n    if (!Number.isNaN(ts)) {\n      const d = new Date(ts);\n      iso = d.toISOString();\n      pubDate = d.toUTCString();\n    }\n  }\n\n  out.push({\n    json: {\n      sourceHost: hostFrom(link) || hostFrom(j.feedUrl || ''),\n      sourceFeed: j.feedTitle || j.meta?.title || j.source || '',\n      title: toStr(j.title),\n      link,\n      isoDate: iso,\n      pubDate: pubDate,\n      content: toStr(j.contentSnippet || j.summary || j.content),\n      imageUrl: pickImage(j),\n    },\n  });\n}\n\n// sort desc by isoDate (nulls last)\nout.sort((a, b) => {\n  const ta = a.json.isoDate ? Date.parse(a.json.isoDate) : 0;\n  const tb = b.json.isoDate ? Date.parse(b.json.isoDate) : 0;\n  return tb - ta;\n});\n\n// optional limit\nconst limit = 100;\nif (out.length > limit) out = out.slice(0, limit);\n\nreturn out;\n"
       },
       "id": "f4a48bd4-ebe3-4f9e-b676-1a88091a7de0",
-      "name": "Code (Normalize + Dedupe + Sort)",
+      "name": "Normalize and Deduplicate Articles",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -396,7 +397,7 @@
         }
       },
       "id": "0bd100cd-3521-4489-9220-29e0b42e714d",
-      "name": "Cron (every 15 min)1",
+      "name": "Schedule Football Feed Check",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
@@ -405,11 +406,14 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 6
+      },
       "id": "6984f2f9-895f-4ffd-8b54-c2fd35bff733",
-      "name": "Merge Feeds1",
+      "name": "Merge RSS Feeds",
       "type": "n8n-nodes-base.merge",
-      "typeVersion": 2,
+      "typeVersion": 3.2,
       "position": [
         880,
         384
@@ -427,7 +431,8 @@
       "position": [
         656,
         864
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -441,7 +446,8 @@
       "position": [
         656,
         672
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -455,7 +461,8 @@
       "position": [
         656,
         480
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -469,7 +476,8 @@
       "position": [
         656,
         288
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -483,11 +491,12 @@
       "position": [
         656,
         96
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => { const text = item.json.body?.candidates?.[0]?.content?.parts?.[0]?.text || ''; item.json.title_fa = (text || '').trim(); return item; });"
+        "jsCode": "return $input.all().map(item => {\n  const response = item.json.body ?? item.json;\n  const raw = response?.candidates?.[0]?.content?.parts?.[0]?.text || '';\n\n  let titleFa = '';\n  let teaserFa = '';\n\n  try {\n    const parsed = JSON.parse(raw);\n    titleFa = String(parsed.title_fa || '').trim();\n    teaserFa = String(parsed.teaser_fa || '').trim();\n  } catch {\n    titleFa = String(raw).trim();\n  }\n\n  item.json.title_fa = titleFa;\n  item.json.teaser_fa = teaserFa;\n  return item;\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -502,19 +511,23 @@
       "parameters": {
         "method": "POST",
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-        "authentication": "predefinedCredentialType",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {}
-          ]
-        },
+        "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {}
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-goog-api-key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.gemini_body) }}",
         "options": {
           "redirect": {
             "redirect": {}
@@ -532,7 +545,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return items.map(item => { const title = item.json.title || ''; const prompt = `ترجمه سریع آلمانی→فارسی، لحن خودمانی و خبری؛ فقط تیتر نهایی.\\nنام‌های خاص را با رسم‌الخط رایج فارسی بنویس (مثال: Bayern München → بایرن مونیخ).\\n\\nTITEL:\\n${title}`; item.json.gemini_body = { contents: [ { role: \"user\", parts: [ { text: prompt } ] } ], generationConfig: { temperature: 0.2 } }; return item; });"
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const title = String(item.json.title || '');\n  const teaserDe = String(item.json.teaser_de || '');\n\n  item.json.gemini_body = {\n    contents: [{\n      role: \"user\",\n      parts: [{\n        text: `Translate the German football headline and teaser into natural Persian.\nReturn only JSON with the keys title_fa and teaser_fa.\n\nTitle:\n${title}\n\nTeaser:\n${teaserDe}`\n      }]\n    }],\n    generationConfig: {\n      temperature: 0.2,\n      responseMimeType: \"application/json\"\n    }\n  };\n\n  return item;\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -542,6 +555,21 @@
       ],
       "id": "7343f566-6e97-4c32-b13d-afee6d70e4ac",
       "name": "Build Gemini body"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2672,
+        720
+      ],
+      "id": "a34f3f21-9dc7-4d44-a1f2-7ebd6f366f21",
+      "name": "Merge Gemini Context"
     }
   ],
   "connections": {
@@ -556,18 +584,18 @@
         ]
       ]
     },
-    "Set provider (openai|gemini)": {
+    "Configure Translation Provider": {
       "main": [
         [
           {
-            "node": "IF provider == openai",
+            "node": "Route Translation Provider",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IF provider == openai": {
+    "Route Translation Provider": {
       "main": [
         [
           {
@@ -576,7 +604,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Build Gemini body",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Build OpenAI body": {
@@ -588,7 +622,7 @@
             "index": 0
           },
           {
-            "node": "Merge",
+            "node": "Merge OpenAI Context",
             "type": "main",
             "index": 0
           }
@@ -599,7 +633,7 @@
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge OpenAI Context",
             "type": "main",
             "index": 1
           }
@@ -621,14 +655,14 @@
       "main": [
         [
           {
-            "node": "Build caption",
+            "node": "Prepare Telegram Caption",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Build caption": {
+    "Prepare Telegram Caption": {
       "main": [
         [
           {
@@ -643,7 +677,7 @@
       "main": [
         [
           {
-            "node": "Set provider (openai|gemini)",
+            "node": "Configure Translation Provider",
             "type": "main",
             "index": 0
           }
@@ -665,26 +699,26 @@
       "main": [
         [
           {
-            "node": "Send a photo message",
+            "node": "Send Telegram Photo",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Send a text message",
+            "node": "Send Telegram Text",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send a text message": {
+    "Send Telegram Text": {
       "main": [
         []
       ]
     },
-    "Merge": {
+    "Merge OpenAI Context": {
       "main": [
         [
           {
@@ -699,14 +733,14 @@
       "main": [
         [
           {
-            "node": "Merge Feeds1",
+            "node": "Merge RSS Feeds",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Cron (every 15 min)1": {
+    "Schedule Football Feed Check": {
       "main": [
         [
           {
@@ -742,18 +776,18 @@
         ]
       ]
     },
-    "Merge Feeds1": {
+    "Merge RSS Feeds": {
       "main": [
         [
           {
-            "node": "Code (Normalize + Dedupe + Sort)",
+            "node": "Normalize and Deduplicate Articles",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Code (Normalize + Dedupe + Sort)": {
+    "Normalize and Deduplicate Articles": {
       "main": [
         [
           {
@@ -768,9 +802,9 @@
       "main": [
         [
           {
-            "node": "Merge Feeds1",
+            "node": "Merge RSS Feeds",
             "type": "main",
-            "index": 0
+            "index": 5
           }
         ]
       ]
@@ -779,9 +813,9 @@
       "main": [
         [
           {
-            "node": "Merge Feeds1",
+            "node": "Merge RSS Feeds",
             "type": "main",
-            "index": 0
+            "index": 4
           }
         ]
       ]
@@ -790,9 +824,9 @@
       "main": [
         [
           {
-            "node": "Merge Feeds1",
+            "node": "Merge RSS Feeds",
             "type": "main",
-            "index": 0
+            "index": 3
           }
         ]
       ]
@@ -801,9 +835,9 @@
       "main": [
         [
           {
-            "node": "Merge Feeds1",
+            "node": "Merge RSS Feeds",
             "type": "main",
-            "index": 0
+            "index": 2
           }
         ]
       ]
@@ -812,14 +846,41 @@
       "main": [
         [
           {
-            "node": "Merge Feeds1",
+            "node": "Merge RSS Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Gemini Translate (HTTP)": {
+      "main": [
+        [
+          {
+            "node": "Merge Gemini Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Build Gemini body": {
+      "main": [
+        [
+          {
+            "node": "Gemini Translate (HTTP)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Gemini Context",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini Translate (HTTP)": {
+    "Merge Gemini Context": {
       "main": [
         [
           {
@@ -830,11 +891,11 @@
         ]
       ]
     },
-    "Build Gemini body": {
+    "Pick title_fa (Gemini)": {
       "main": [
         [
           {
-            "node": "Gemini Translate (HTTP)",
+            "node": "Time window (last 20 min)",
             "type": "main",
             "index": 0
           }
